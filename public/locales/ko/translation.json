@@ -1,0 +1,23 @@
+{
+  "common": {
+    "welcome": "CITMS 시스템에 오신 것을 환영합니다",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "save": "저장",
+    "cancel": "취소",
+    "edit": "편집",
+    "delete": "삭제"
+  },
+  "menu": {
+    "dashboard": "대시보드",
+    "inventory": "재고",
+    "reports": "보고서",
+    "settings": "설정"
+  },
+  "reports": {
+    "title": "시스템 보고서",
+    "export_pdf": "PDF 내보내기",
+    "generated_at": "생성 일시",
+    "page": "페이지"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "common": {
+    "welcome": "Chào mừng đến với hệ thống CITMS",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "save": "Lưu",
+    "cancel": "Hủy bỏ",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa"
+  },
+  "menu": {
+    "dashboard": "Bảng điều khiển",
+    "inventory": "Thiết bị",
+    "reports": "Báo cáo",
+    "settings": "Cài đặt"
+  },
+  "reports": {
+    "title": "Báo cáo Hệ thống",
+    "export_pdf": "Xuất báo cáo PDF",
+    "generated_at": "Tạo lúc",
+    "page": "Trang"
+  }
+}

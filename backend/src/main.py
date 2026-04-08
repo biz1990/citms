@@ -18,6 +18,7 @@ from backend.src.contexts.reports.router import router as reports_router
 from backend.src.contexts.reconciliation.router import router as reconciliation_router
 import uuid
 import time
+from backend.src.core.i18n import set_language
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -78,6 +79,29 @@ async def add_process_time_and_trace_id(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     response.headers["X-Trace-ID"] = trace_id
     response.headers["X-Request-ID"] = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    return response
+
+@app.middleware("http")
+async def detect_language(request: Request, call_next):
+    # 1. Check query param
+    lang = request.query_params.get("lang")
+    
+    # 2. Check header
+    if not lang:
+        accept_lang = request.headers.get("accept-language", "")
+        if accept_lang:
+            # Simple parse for now: first locale
+            lang = accept_lang.split(",")[0].split(";")[0].split("-")[0]
+            
+    # 3. Default fallback
+    if not lang or lang not in ["vi", "en", "ko", "ar"]:
+        lang = "vi"
+        
+    # Set to ContextVar
+    set_language(lang)
+    
+    response = await call_next(request)
+    response.headers["Content-Language"] = lang
     return response
 
 @app.get("/")

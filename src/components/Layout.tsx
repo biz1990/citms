@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,11 +51,17 @@ const navItems = [
 ];
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuthStore();
   const { notifications } = useNotifications();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+
+  const localizedNavItems = navItems.map(item => ({
+    ...item,
+    label: t(`menu.${item.label.toLowerCase().replace(' ', '_')}`)
+  }));
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -72,7 +80,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {localizedNavItems.map((item) => {
             if (item.permission && !hasPermission(item.permission)) return null;
             const isActive = location.pathname === item.path;
             return (
@@ -95,7 +103,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="p-4 border-t">
           <Button variant="ghost" className="w-full justify-start gap-3 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-xl" onClick={logout}>
             <LogOut className="h-5 w-5" />
-            {isSidebarOpen && <span className="text-sm font-medium">Logout</span>}
+            {isSidebarOpen && <span className="text-sm font-medium">{t('common.logout')}</span>}
           </Button>
         </div>
       </aside>
@@ -115,6 +123,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <div className="h-4 w-[1px] bg-border" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">

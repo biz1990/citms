@@ -1,0 +1,23 @@
+{
+  "common": {
+    "welcome": "Welcome to CITMS system",
+    "login": "Login",
+    "logout": "Logout",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "reports": {
+    "title": "System Reports",
+    "export_pdf": "Export PDF",
+    "generated_at": "Generated At",
+    "page": "Page"
+  }
+}

@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from weasyprint import HTML
 from jinja2 import Environment, FileSystemLoader
+from backend.src.core.i18n import get_language, get_dir, get_report_labels
 
 class ReportService:
     def __init__(self, db: AsyncSession):
@@ -159,11 +160,18 @@ class ReportService:
             rows = df.values.tolist()
             
             # Render HTML string using Jinja2
+            lang = get_language()
+            layout_dir = get_dir()
+            labels = get_report_labels()
+            
             html_content = template.render(
-                title=title.replace('_', ' ') + " Report",
+                title=title.replace('_', ' ') + f" {labels['report']}",
                 columns=columns,
                 rows=rows,
-                current_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                current_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                lang=lang,
+                dir=layout_dir,
+                labels=labels
             )
             
             # Generate PDF using WeasyPrint

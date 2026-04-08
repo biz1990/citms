@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ lang }}" dir="{{ dir }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -7,19 +7,21 @@
             size: a4 landscape;
             margin: 1cm;
             @bottom-right {
-                content: "Trang " counter(page);
+                content: "{{ labels.page }} " counter(page);
             }
             @bottom-left {
                 content: "CITMS v3.6 - {{ current_time }}";
             }
         }
         body { 
-            font-family: 'Roboto', 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif; 
-            font-size: 10pt; 
+            font-family: 'Roboto', 'Noto Sans KR', 'Noto Naskh Arabic', 'DejaVu Sans', sans-serif; 
+            font-size: 10pt;
+            direction: {{ dir }};
+            text-align: {{ 'right' if dir == 'rtl' else 'left' }};
         }
         h1 { text-align: center; color: #2c3e50; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: {{ 'right' if dir == 'rtl' else 'left' }}; }
         th { background-color: #ecf0f1; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
     </style>
