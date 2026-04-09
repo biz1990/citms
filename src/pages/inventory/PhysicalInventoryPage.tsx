@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
@@ -33,6 +34,7 @@ interface Conflict {
 }
 
 const PhysicalInventoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isScanning, setIsScanning] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -198,18 +200,18 @@ const PhysicalInventoryPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            Physical Inventory PWA
+            {t('inventory.physical.title')}
             {isOnline ? (
               <Badge className="bg-green-600 hover:bg-green-700 flex items-center gap-1">
-                <Wifi className="h-3 w-3" /> Online
+                <Wifi className="h-3 w-3" /> {t('common.status.online')}
               </Badge>
             ) : (
               <Badge variant="destructive" className="flex items-center gap-1">
-                <WifiOff className="h-3 w-3" /> Offline Mode
+                <WifiOff className="h-3 w-3" /> {t('common.status.offline')}
               </Badge>
             )}
           </h1>
-          <p className="text-muted-foreground">Scan assets for physical verification. Data will sync automatically when online.</p>
+          <p className="text-muted-foreground">{t('inventory.physical.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={syncData} disabled={!isOnline || pendingSync.length === 0}>

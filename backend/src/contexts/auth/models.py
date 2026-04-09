@@ -88,7 +88,7 @@ class Department(CITMSBaseModel):
     __tablename__ = "departments"
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("departments.id"), nullable=True)
-    manager_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    manager_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", deferrable=True, initially="DEFERRED"), nullable=True)
     level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 class AuditLog(CITMSBaseModel):

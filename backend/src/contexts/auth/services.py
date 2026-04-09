@@ -98,7 +98,11 @@ class AuthService:
             last_login=user.last_login
         )
 
-        access_token = create_access_token(data={"sub": str(user.id)})
+        access_token = create_access_token(data={
+            "sub": str(user.id),
+            "permissions": user_permissions,
+            "roles": user_roles
+        })
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
         return TokenResponse(

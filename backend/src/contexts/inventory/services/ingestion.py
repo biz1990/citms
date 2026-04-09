@@ -5,7 +5,7 @@ from typing import List, Optional, Any
 from uuid import UUID
 from sqlalchemy import select, and_, update, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.src.contexts.asset.models import Device, DeviceComponent, DeviceConnection
+from backend.src.contexts.asset.models import Device, DeviceComponent, DeviceConnection, DeviceStatusHistory
 from backend.src.contexts.inventory.models import SoftwareCatalog, SoftwareInstallation, InventoryRunLog
 from backend.src.contexts.inventory.schemas import InventoryReportRequest, InventoryReportResponse
 from backend.src.contexts.notification.services.event_bus import EventPublisher, EventType
@@ -73,7 +73,12 @@ class InventoryIngestionService:
             )
             self.db.add(device)
             await self.db.flush() # Get device.id
-            is_new = True
+            # Log initial status
+            self.db.add(DeviceStatusHistory(
+                device_id=device.id,
+                new_status=device.status,
+                reason="INITIAL_REGISTRATION"
+            ))
             
             # Audit Log for Registration
             from backend.src.contexts.auth.audit_service import AuditService
@@ -85,6 +90,13 @@ class InventoryIngestionService:
                 details={"hostname": device.hostname, "status": "PENDING_APPROVAL", "invalid_serial": is_invalid_serial}
             )
         else:
+            # Check for status change
+            old_status = device.status
+            new_status = device.status # Default
+            
+            # Logic: If it was OFFLINE, it's now ONLINE (handled via websocket/webhook usually, 
+            # but ingestion also counts as 'online' activity)
+            
             # Update basic info
             device.last_seen = datetime.utcnow()
             device.hostname = report.hostname
@@ -99,6 +111,19 @@ class InventoryIngestionService:
             dtype, dsubtype = self._classify_device_type(report)
             device.device_type = dtype
             device.device_subtype = dsubtype
+            
+            if old_status != device.status:
+                self.db.add(DeviceStatusHistory(
+                    device_id=device.id,
+                    old_status=old_status,
+                    new_status=device.status,
+                    reason="INVENTORY_INGESTION_UPDATE"
+                ))
+                await EventPublisher.publish(
+                    EventType.DEVICE_STATUS_CHANGED,
+                    device.id,
+                    {"old_status": old_status, "new_status": device.status}
+                )
 
             if is_invalid_serial and not device.asset_tag:
                 device.auto_asset_tag = auto_tag
@@ -194,9 +219,14 @@ class InventoryIngestionService:
 
     def _is_valid_serial(self, serial: str) -> bool:
         if not serial: return False
+        # Spec v3.6: Complex regex to filter common invalid serials
+        pattern = r"^(?!(0|12345678|Default string|To be filled by O\.E\.M\.|None|Unknown|Not Applicable))[a-zA-Z0-9\-\.]{5,30}$"
+        if not re.match(pattern, serial, re.IGNORECASE):
+            return False
+        
+        # Additional blacklist patterns
         invalid_patterns = [
-            r"0123456789", r"1234567890", r"To be filled by O\.E\.M\.", 
-            r"Default string", r"None", r"Unknown", r"Not Applicable",
+            r"0123456789", r"1234567890",
             r"^0+$", r"^F+$"
         ]
         for pattern in invalid_patterns:

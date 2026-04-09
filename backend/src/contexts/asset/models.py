@@ -3,6 +3,7 @@ from sqlalchemy import String, ForeignKey, DateTime, Boolean, Integer, JSON, tex
 from sqlalchemy.dialects.postgresql import UUID, INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.src.infrastructure.models.base import CITMSBaseModel
+from backend.src.infrastructure.database import Base
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -104,3 +105,16 @@ class DeviceConnection(CITMSBaseModel):
     
     source_device: Mapped["Device"] = relationship("Device", foreign_keys=[source_device_id])
     target_device: Mapped["Device"] = relationship("Device", foreign_keys=[target_device_id])
+
+class DeviceStatusHistory(Base):
+    __tablename__ = "device_status_history"
+    
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    device_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("devices.id"), nullable=False)
+    old_status: Mapped[Optional[str]] = mapped_column(String(30))
+    new_status: Mapped[str] = mapped_column(String(30))
+    changed_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
+    reason: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, server_default=text("NOW()"))
+    
+    device: Mapped["Device"] = relationship("Device")

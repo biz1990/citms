@@ -76,7 +76,14 @@ class NotificationService:
             "INVENTORY_RECONCILE_NEEDED": ["IT_STAFF"],
             "TICKET_SLA_BREACHED": ["IT_MANAGER"],
             "PO_PENDING_APPROVAL": ["IT_MANAGER", "SUPER_ADMIN"],
-            "WORKFLOW_PENDING_IT": ["IT_STAFF"]
+            "WORKFLOW_PENDING_IT": ["IT_STAFF"],
+            "DEVICE_STATUS_CHANGED": ["IT_STAFF", "IT_MANAGER"],
+            "OFFBOARDING_FAILED": ["IT_MANAGER", "SUPER_ADMIN"],
+            "WARRANTY_EXPIRING_30_DAYS": ["IT_STAFF"],
+            "LICENSE_EXPIRING_30_DAYS": ["IT_MANAGER"],
+            "BLACKLIST_VIOLATION": ["IT_STAFF", "IT_MANAGER"],
+            "SPARE_PARTS_BELOW_MIN": ["IT_STAFF"],
+            "ASSET_DEPRECIATION_ALERT": ["IT_MANAGER"]
         }
         
         target_roles = role_map.get(event_type, ["IT_STAFF"])

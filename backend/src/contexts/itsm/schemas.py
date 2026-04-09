@@ -54,6 +54,7 @@ class TicketResponse(TicketBase):
     closed_at: Optional[datetime] = None
     cab_approved_at: Optional[datetime] = None
     cab_approver_id: Optional[UUID] = None
+    version: int
     created_at: datetime
     updated_at: datetime
     

@@ -52,6 +52,7 @@ class InventoryReportResponse(BaseModel):
     device_id: UUID
     status: str
     processed_at: datetime
+    version: int
     conflicts_detected: bool = False
     agent_token: Optional[str] = None
 

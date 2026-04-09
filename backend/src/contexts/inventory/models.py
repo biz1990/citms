@@ -2,6 +2,7 @@ from sqlalchemy import String, ForeignKey, DateTime, Boolean, Integer, JSON, tex
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.src.infrastructure.models.base import CITMSBaseModel
+from backend.src.infrastructure.database import Base
 from typing import Optional, List
 from datetime import datetime
 import uuid
@@ -28,14 +29,16 @@ class SoftwareInstallation(CITMSBaseModel):
     device: Mapped["Device"] = relationship(back_populates="installations")
     catalog: Mapped["SoftwareCatalog"] = relationship(back_populates="installations")
 
-class InventoryRunLog(CITMSBaseModel):
+class InventoryRunLog(Base): # Spec 3.8: Raw logs, no soft-delete, no versioning
     __tablename__ = "inventory_run_logs"
     
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     inventory_run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     device_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("devices.id"))
     status: Mapped[str] = mapped_column(String(20))
     error_message: Mapped[Optional[str]] = mapped_column(String)
     processing_time_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, server_default=text("NOW()"))
 
 class ReconciliationConflict(CITMSBaseModel):
     __tablename__ = "reconciliation_conflicts"
