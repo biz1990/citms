@@ -19,7 +19,7 @@ router = APIRouter(prefix="/tickets", tags=["ITSM & Ticket System"])
 @router.get("/", response_model=PaginatedResponse[TicketResponse])
 async def list_tickets(
     pagination: PaginationParams = Depends(get_pagination_params),
-    status: Optional[str] = None,
+    filter: Optional[str] = None, # SRS 5.4: OData-like filter (status eq 'OPEN')
     priority: Optional[str] = None,
     category: Optional[str] = None,
     assignee_id: Optional[UUID] = None,
@@ -34,8 +34,19 @@ async def list_tickets(
     # Apply Row-Level Security / Data Isolation
     query = data_scope.apply_isolation(query, Ticket)
     
-    if status:
-        query = query.where(Ticket.status == status)
+    # Module 5.4: OData-like Filter Parser
+    if filter:
+        if " eq " in filter:
+            field, value = filter.split(" eq ")
+            value = value.strip("'").strip("\"")
+            if hasattr(Ticket, field):
+                query = query.where(getattr(Ticket, field) == value)
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid filter format. Expected 'field eq 'value'' (SRS 5.4)"
+            )
+            
     if priority:
         query = query.where(Ticket.priority == priority)
     if category:

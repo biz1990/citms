@@ -106,6 +106,11 @@ class DeviceConnection(CITMSBaseModel):
     source_device: Mapped["Device"] = relationship("Device", foreign_keys=[source_device_id])
     target_device: Mapped["Device"] = relationship("Device", foreign_keys=[target_device_id])
 
+    @property
+    def other_device(self):
+        """Topological helper for the UI to get the device connected to the host."""
+        return self.target_device
+
 class DeviceStatusHistory(Base):
     __tablename__ = "device_status_history"
     

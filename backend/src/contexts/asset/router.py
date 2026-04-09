@@ -6,6 +6,7 @@ from uuid import UUID
 from datetime import datetime, timedelta
 from backend.src.infrastructure.database import get_db
 from backend.src.contexts.asset.models import Device, DeviceComponent, DeviceConnection
+from backend.src.contexts.asset.repositories import DeviceRepository
 from backend.src.infrastructure.dependencies.pagination import PaginationParams, get_pagination_params, PaginatedResponse
 from backend.src.contexts.auth.dependencies import get_current_user, get_data_scope, DataScope, PermissionChecker
 from backend.src.contexts.auth.models import User
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/devices", tags=["Asset Management"])
 @router.get("/", response_model=PaginatedResponse[dict])
 async def list_devices(
     pagination: PaginationParams = Depends(get_pagination_params),
-    status: Optional[str] = None,
+    filter: Optional[str] = None, # SRS 5.4: OData-like filter (status eq 'ACTIVE')
     device_type: Optional[str] = None,
     location_id: Optional[UUID] = None,
     search: Optional[str] = None,
@@ -32,8 +33,20 @@ async def list_devices(
     # Apply Row-Level Security / Data Isolation
     query = data_scope.apply_isolation(query, Device)
     
-    if status:
-        query = query.where(Device.status == status)
+    # Module 5.4: OData-like Filter Parser
+    if filter:
+        if " eq " in filter:
+            field, value = filter.split(" eq ")
+            value = value.strip("'").strip("\"")
+            if hasattr(Device, field):
+                query = query.where(getattr(Device, field) == value)
+        else:
+            # Fallback or strict enforcement
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid filter format. Expected 'field eq 'value'' (SRS 5.4)"
+            )
+            
     if device_type:
         query = query.where(Device.device_type == device_type)
     if location_id:
@@ -226,24 +239,20 @@ async def update_device(
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     
-    old_data = {k: getattr(device, k) for k in device_data.keys() if hasattr(device, k)}
-    
-    for key, value in device_data.items():
-        setattr(device, key, value)
-    
-    await db.commit()
-    await db.refresh(device)
+    repo = DeviceRepository(db)
+    updated_device = await repo.update(device, device_data)
     
     audit_service = AuditService(db)
     await audit_service.log(
         action="UPDATE_DEVICE",
         resource_type="DEVICE",
-        resource_id=str(device.id),
+        resource_id=str(updated_device.id),
         user_id=current_user.id,
-        details={"old_data": old_data, "new_data": device_data}
+        details=device_data,
+        old_data=getattr(updated_device, "_old_data", None)
     )
     
-    return device
+    return updated_device
 
 @router.delete("/{id}")
 async def delete_device(
@@ -419,3 +428,40 @@ async def reject_component(
     )
     
     return comp
+
+@router.get("/{id}/status-history")
+async def get_device_status_history(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    _ = Depends(PermissionChecker("asset.view"))
+):
+    """Retrieve historical status changes for a device."""
+    from backend.src.contexts.asset.models import DeviceStatusHistory
+    res = await db.execute(
+        select(DeviceStatusHistory)
+        .where(DeviceStatusHistory.device_id == id)
+        .order_by(DeviceStatusHistory.created_at.desc())
+    )
+    return res.scalars().all()
+
+@router.get("/{id}/qr")
+async def get_device_qr(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    _ = Depends(PermissionChecker("asset.view"))
+):
+    """Generate QR code data for physical labeling."""
+    res = await db.execute(select(Device).where(Device.id == id))
+    device = res.scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+        
+    # Mock QR data generation
+    return {
+        "device_id": str(id),
+        "asset_tag": device.asset_tag,
+        "qr_data": f"CITMS:ASSET:{device.asset_tag or str(id)}",
+        "qr_url": f"https://citms.internal/assets/{id}"
+    }

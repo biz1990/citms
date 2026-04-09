@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from backend.src.infrastructure.database import get_db
 from backend.src.contexts.workflow.schemas import (
@@ -71,3 +71,14 @@ async def complete_request(
         await service.process_offboarding(id)
     
     return {"status": "success"}
+
+@router.patch("/requests/{id}/cancel", response_model=WorkflowRequestResponse)
+async def cancel_workflow_request(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    _ = Depends(PermissionChecker(["workflow.create"]))
+):
+    service = WorkflowService(db)
+    return await service.cancel_request(id, current_user.id)
+

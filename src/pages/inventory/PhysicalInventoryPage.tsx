@@ -140,39 +140,28 @@ const PhysicalInventoryPage: React.FC = () => {
     if (!isOnline || pendingSync.length === 0) return;
     
     const db = await initDB();
-    const newConflicts: Conflict[] = [];
     
-    for (const item of pendingSync) {
-      try {
-        // Check for conflict: Get current server state
-        const serverRes = await apiClient.get(`/devices/${item.device_id}`);
-        const serverData = serverRes.data;
-        
-        // If server was updated AFTER our offline scan, it's a conflict
-        if (serverData.last_seen && new Date(serverData.last_seen) > new Date(item.checked_at)) {
-          newConflicts.push({
-            device_id: item.device_id,
-            local_data: item,
-            server_data: serverData
-          });
-          continue;
-        }
+    try {
+      // [BLOCK-004] Refactor to use bulk-reconcile API
+      const payload = {
+        actions: pendingSync.map(item => ({
+          device_id: item.device_id,
+          decision: 'ACCEPT_AGENT' // Default decision for sync
+        }))
+      };
 
-        // No conflict, proceed with sync
-        await apiClient.post(`/devices/${item.device_id}/check-in`, item);
-        await db.delete('pending_sync', item.id);
-      } catch (error) {
-        console.error(`Failed to sync ${item.device_id}`, error);
-      }
-    }
-
-    setConflicts(newConflicts);
-    loadOffline();
-    
-    if (newConflicts.length > 0) {
-      toast.warning(`${newConflicts.length} conflicts detected during sync`);
-    } else {
-      toast.success('All items synced successfully');
+      await apiClient.post('/inventory/bulk-reconcile', payload);
+      
+      // Clear pending sync after successful bulk upload
+      const tx = db.transaction('pending_sync', 'readwrite');
+      await tx.store.clear();
+      await tx.done;
+      
+      loadOffline();
+      toast.success('All items synced successfully via bulk reconciliation');
+    } catch (error) {
+      console.error('Failed to perform bulk sync', error);
+      toast.error('Bulk sync failed. Please try again later.');
     }
   };
 

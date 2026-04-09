@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from typing import List, Optional, Any
 from uuid import UUID
 from sqlalchemy import select, and_, update
@@ -129,6 +130,21 @@ class WorkflowService:
         self.db.add(history)
         
         request.status = WorkflowStatus.PREPARING
+        await self.db.commit()
+        await self.db.refresh(request)
+        return request
+
+    async def cancel_request(self, request_id: UUID, user_id: UUID) -> WorkflowRequest:
+        """Cancel a pending or preparing request."""
+        res = await self.db.execute(select(WorkflowRequest).where(WorkflowRequest.id == request_id))
+        request = res.scalar_one_or_none()
+        if not request:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        if request.status not in [WorkflowStatus.PENDING_IT, WorkflowStatus.PREPARING]:
+            raise HTTPException(status_code=400, detail="Only pending or preparing requests can be cancelled")
+            
+        request.status = WorkflowStatus.CANCELLED
         await self.db.commit()
         await self.db.refresh(request)
         return request

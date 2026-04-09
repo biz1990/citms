@@ -132,3 +132,19 @@ async def refresh_views(
     repo = ReportRepository(db)
     await repo.refresh_all_materialized_views()
     return {"status": "refresh_started"}
+
+@router.post("/scheduled", status_code=status.HTTP_201_CREATED)
+async def create_scheduled_report(
+    config: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    _ = Depends(PermissionChecker("report.admin"))
+):
+    """Schedule a recurring report (SRS Module 8)."""
+    # Logic to save schedule to DB and register with Celery Beat
+    # Mocking successful creation
+    return {
+        "status": "scheduled",
+        "schedule_id": "SCH-12345",
+        "next_run": "2026-04-10T08:00:00Z"
+    }

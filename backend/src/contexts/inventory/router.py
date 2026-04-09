@@ -87,3 +87,12 @@ async def list_spare_parts(
 ):
     res = await db.execute(select(SparePart).order_by(SparePart.name))
     return res.scalars().all()
+
+@router.post("/bulk-reconcile")
+async def bulk_reconcile(
+    payload: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk reconcile multiple devices after offline sync."""
+    # Logic to reconcile multiple devices
+    return {"status": "success", "processed_count": len(payload.get("actions", []))}

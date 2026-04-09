@@ -44,6 +44,9 @@ class BaseRepository(Generic[T]):
         current_version = db_obj.version
         new_version = current_version + 1
         
+        # Capture old data for auditing (Module 10)
+        old_data = {c.name: getattr(db_obj, c.name) for c in db_obj.__table__.columns}
+        
         update_data = obj_in.copy()
         update_data["version"] = new_version
         update_data["updated_at"] = datetime.utcnow()
@@ -77,6 +80,9 @@ class BaseRepository(Generic[T]):
             
         await self.db.commit()
         await self.db.refresh(updated_obj)
+        
+        # Attached old_data for the caller to use in Audit Log
+        setattr(updated_obj, "_old_data", old_data)
         return updated_obj
 
     async def soft_delete(self, db_obj: T) -> bool:

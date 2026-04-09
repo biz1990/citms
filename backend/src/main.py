@@ -16,6 +16,8 @@ from backend.src.contexts.workflow.router import router as workflow_router
 from backend.src.contexts.notification.router import router as notification_router
 from backend.src.contexts.reports.router import router as reports_router
 from backend.src.contexts.reconciliation.router import router as reconciliation_router
+from backend.src.contexts.inventory.agent_router import router as agent_router
+from backend.src.contexts.license.blacklist_router import router as blacklist_router
 import uuid
 import time
 from backend.src.core.i18n import set_language
@@ -55,6 +57,8 @@ app.include_router(workflow_router, prefix=settings.API_V1_STR)
 app.include_router(notification_router, prefix=settings.API_V1_STR)
 app.include_router(reports_router, prefix=settings.API_V1_STR)
 app.include_router(reconciliation_router, prefix=settings.API_V1_STR)
+app.include_router(agent_router, prefix=settings.API_V1_STR)
+app.include_router(blacklist_router, prefix=settings.API_V1_STR)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):

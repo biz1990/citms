@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Ticket } from '@/types';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
@@ -71,6 +72,20 @@ const TicketListPage: React.FC = () => {
     if (!destination) return;
     if (destination.droppableId === source.droppableId) return;
 
+    // SRS 4 & 7.2 Enforcement
+    const ticket = tickets?.find((t: Ticket) => t.id === draggableId);
+    if (!ticket) return;
+
+    if (ticket.is_sla_breached) {
+      toast.error('Cannot change status of a ticket that has breached SLA (SRS 7.2)');
+      return;
+    }
+
+    if (ticket.status === 'RESOLVED' && destination.droppableId === 'OPEN') {
+      toast.error('Transition from RESOLVED to OPEN is forbidden (SRS 4)');
+      return;
+    }
+
     bulkUpdateMutation.mutate({
       ticketIds: [draggableId],
       status: destination.droppableId,
@@ -131,17 +146,22 @@ const TicketListPage: React.FC = () => {
             <div className="h-4 w-[1px] bg-primary/20" />
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium">Update Status:</span>
-              {TICKET_STATUSES.map(status => (
-                <Button 
-                  key={status} 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 text-[10px]"
-                  onClick={() => bulkUpdateMutation.mutate({ ticketIds: selectedTickets, status })}
-                >
-                  {status}
-                </Button>
-              ))}
+              {TICKET_STATUSES.map(status => {
+                const hasBreached = tickets?.filter((t: Ticket) => selectedTickets.includes(t.id) && t.is_sla_breached).length > 0;
+                
+                return (
+                  <Button 
+                    key={status} 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-[10px]"
+                    disabled={hasBreached}
+                    onClick={() => bulkUpdateMutation.mutate({ ticketIds: selectedTickets, status })}
+                  >
+                    {status}
+                  </Button>
+                );
+              })}
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setSelectedTickets([])}>Cancel</Button>
@@ -208,7 +228,7 @@ const TicketListPage: React.FC = () => {
                             </div>
                           </Card>
                         ))
-                      ) : getTicketsByStatus(status).map((ticket: any, index: number) => (
+                      ) : getTicketsByStatus(status).map((ticket: Ticket, index: number) => (
                         // @ts-ignore
                         <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
                           {(provided: any, snapshot: any) => (
@@ -314,7 +334,7 @@ const TicketListPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {getTicketsByDate(selectedDate || new Date()).map((ticket: any) => (
+                {getTicketsByDate(selectedDate || new Date()).map((ticket: Ticket) => (
                   <div key={ticket.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className={`h-2 w-2 rounded-full ${

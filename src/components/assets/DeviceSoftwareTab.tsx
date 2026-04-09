@@ -61,7 +61,7 @@ const DeviceSoftwareTab: React.FC<DeviceSoftwareTabProps> = ({ deviceId }) => {
           </TableHeader>
           <TableBody>
             {software?.map((item: any) => {
-              const isViolation = item.is_blacklisted || item.license_violation;
+              const isViolation = item.is_blocked || item.license_violation;
               
               return (
                 <TableRow 

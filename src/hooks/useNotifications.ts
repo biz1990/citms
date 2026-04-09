@@ -26,9 +26,14 @@ export function useNotifications() {
       try {
         const notification = JSON.parse(event.data);
         setNotifications(prev => [notification, ...prev]);
-        toast.info(notification.title, {
-          description: notification.message,
-        });
+        
+        // SRS 7.1: Check user preferences before showing toast
+        const preferences = user?.preferences;
+        if (preferences?.notifications_enabled !== false) {
+          toast.info(notification.title, {
+            description: notification.message,
+          });
+        }
       } catch (e) {
         console.error('Failed to parse notification:', e);
       }

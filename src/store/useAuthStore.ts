@@ -7,6 +7,10 @@ interface User {
   full_name: string;
   role: string;
   permissions: string[];
+  preferences?: {
+    notifications_enabled?: boolean;
+    [key: string]: any;
+  };
 }
 
 interface AuthState {
@@ -36,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
       hasPermission: (permission) => {
         const user = get().user;
         if (!user) return false;
-        if (user.role === 'SUPER_ADMIN') return true;
+        // Module 6: Strict Permission Check (Anti-Role Bypass)
         return user.permissions.includes(permission);
       },
     }),

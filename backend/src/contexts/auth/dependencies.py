@@ -75,6 +75,18 @@ async def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
         
+    # Module 6: Immediate Power Refresh
+    # If DB permissions differ from JWT permissions, force token refresh
+    db_permissions = sorted(list(set([p.code for role in user.roles for p in role.permissions])))
+    jwt_permissions = sorted(payload.get("permissions", []))
+    
+    if db_permissions != jwt_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User permissions have changed. Please refresh token.",
+            headers={"WWW-Authenticate": "Bearer", "X-Action": "REFRESH_TOKEN"}
+        )
+
     return user
 
 async def get_data_scope(current_user: User = Depends(get_current_user)) -> DataScope:
