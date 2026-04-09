@@ -3,7 +3,9 @@ version: '3.8'
 services:
   # --- Database (PostgreSQL) ---
   db:
-    image: postgres:15-alpine
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.db
     container_name: citms_db
     restart: always
     environment:
@@ -14,9 +16,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U citms_user -d citms_db"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-citms_user} -d ${POSTGRES_DB:-citms_db}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -54,7 +57,7 @@ services:
   api:
     build:
       context: ./backend
-      target: api
+      dockerfile: Dockerfile
     container_name: citms_api
     restart: always
     depends_on:
@@ -68,6 +71,11 @@ services:
       - MINIO_ENDPOINT=minio:9000
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # --- Celery Worker ---
   worker:
@@ -105,7 +113,7 @@ services:
   event_consumer:
     build:
       context: ./backend
-      target: worker
+      dockerfile: Dockerfile
     container_name: citms_event_consumer
     restart: always
     # Start the consumer task immediately on worker startup

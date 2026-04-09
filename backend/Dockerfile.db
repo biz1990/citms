@@ -1,0 +1,20 @@
+FROM postgres:15-alpine
+
+# Install build dependencies, pg_cron, and cleanup
+RUN apk add --no-cache --virtual .build-deps \
+    build-base \
+    clang15 \
+    llvm15 \
+    postgresql-dev \
+    && apk add --no-cache git \
+    && git clone https://github.com/citusdata/pg_cron.git \
+    && cd pg_cron \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -rf pg_cron \
+    && apk del .build-deps
+
+# Create init script to load pg_cron into shared_preload_libraries
+RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/local/share/postgresql/postgresql.conf.sample
+RUN echo "cron.database_name = 'citms_db'" >> /usr/local/share/postgresql/postgresql.conf.sample
