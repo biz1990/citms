@@ -14,12 +14,12 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "citms"
-    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    DATABASE_URL: Optional[str] = None
 
-    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: Optional[str], values: any) -> any:
-        if isinstance(v, str):
+        if isinstance(v, str) and v:
             return v
         return f"postgresql+asyncpg://{values.data.get('POSTGRES_USER')}:{values.data.get('POSTGRES_PASSWORD')}@{values.data.get('POSTGRES_SERVER')}/{values.data.get('POSTGRES_DB')}"
 
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     @field_validator("REDIS_URL", mode="before")
     @classmethod
     def assemble_redis_connection(cls, v: Optional[str], values: any) -> any:
-        if isinstance(v, str):
+        if isinstance(v, str) and v:
             return v
         return f"redis://{values.data.get('REDIS_HOST')}:{values.data.get('REDIS_PORT')}/0"
 

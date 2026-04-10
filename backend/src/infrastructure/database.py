@@ -4,7 +4,7 @@ from sqlalchemy import event, select, and_
 from backend.src.core.config import settings
 
 engine = create_async_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
+    settings.DATABASE_URL,
     echo=True,
     future=True,
     pool_size=20,
