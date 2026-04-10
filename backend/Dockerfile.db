@@ -1,20 +1,12 @@
-FROM postgres:15-alpine
+# Sử dụng ảnh Debian thay vì Alpine để cài pg_cron từ PGDG official package
+# (Alpine thiếu clang15/llvm15 → build từ source thất bại)
+FROM postgres:15
 
-# Install build dependencies, pg_cron, and cleanup
-RUN apk add --no-cache --virtual .build-deps \
-    build-base \
-    clang15 \
-    llvm15 \
-    postgresql-dev \
-    && apk add --no-cache git \
-    && git clone https://github.com/citusdata/pg_cron.git \
-    && cd pg_cron \
-    && make \
-    && make install \
-    && cd .. \
-    && rm -rf pg_cron \
-    && apk del .build-deps
+# Cài pg_cron từ PGDG apt repository (đã được cấu hình sẵn trong ảnh postgres:15)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-15-cron \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create init script to load pg_cron into shared_preload_libraries
-RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/local/share/postgresql/postgresql.conf.sample
-RUN echo "cron.database_name = 'citms_db'" >> /usr/local/share/postgresql/postgresql.conf.sample
+# Kích hoạt pg_cron và gắn với database của CITMS
+RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/share/postgresql/postgresql.conf.sample \
+    && echo "cron.database_name = 'citms_db'" >> /usr/share/postgresql/postgresql.conf.sample
