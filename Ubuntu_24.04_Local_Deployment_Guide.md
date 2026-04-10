@@ -105,7 +105,8 @@ nano .env
 Hệ thống CITMS v3.6 sử dụng Docker Compose để điều phối 7 dịch vụ chính.
 
 ```bash
-# Cần build frontend trước nếu muốn chạy service 'frontend' trong docker
+# Cần cài đặt thư viện và build frontend trước nếu muốn phục vụ qua docker compose
+npm install
 npm run build 
 
 # Khởi chạy toàn bộ hệ thống ở chế độ chạy ngầm
@@ -164,7 +165,7 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Cài đặt thư viện và chạy dev server
-cd ~/citms-project/frontend
+cd ~/citms-project
 npm install
 npm run dev
 ```
