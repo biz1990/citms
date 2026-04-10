@@ -99,6 +99,9 @@ nano .env
 Hệ thống CITMS v3.6 sử dụng Docker Compose để điều phối 7 dịch vụ chính.
 
 ```bash
+# Cần build frontend trước nếu muốn chạy service 'frontend' trong docker
+npm run build 
+
 # Khởi chạy toàn bộ hệ thống ở chế độ chạy ngầm
 docker compose up -d --build
 ```
@@ -109,7 +112,8 @@ docker compose up -d --build
 3. `minio`: Lưu trữ đối tượng (S3 compatible).
 4. `api`: Backend FastAPI (Chỉ chạy khi db và redis đã sẵn sàng).
 5. `worker` & `beat`: Xử lý tác vụ nền Celery.
-6. `event_consumer`: Xử lý sự kiện thời gian thực.
+6. `event_consumer`: Xử lý sự kiện thực tế (Real-time).
+7. `db_backup`: Tự động sao lưu vào MinIO (lịch trình: 2 AM hàng ngày).
 
 ---
 

@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # --- Database (PostgreSQL) ---
@@ -58,6 +58,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: api
     container_name: citms_api
     restart: always
     depends_on:
@@ -114,6 +115,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: worker
     container_name: citms_event_consumer
     restart: always
     # Start the consumer task immediately on worker startup
@@ -157,8 +159,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./frontend/dist:/usr/share/nginx/html
-      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./dist:/usr/share/nginx/html
 
 volumes:
   postgres_data:
