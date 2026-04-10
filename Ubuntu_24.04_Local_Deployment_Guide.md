@@ -92,6 +92,12 @@ nano .env
 - `REDIS_URL=redis://redis:6379/0`
 - `S3_ENDPOINT=http://minio:9000` (Sử dụng tên service Docker bên trong mạng nội bộ)
 
+> **❗ BUỘC BUỘC - CÁC BIẾN BẮT BUỘC PHẢI CÓ GIÁ TRỊ:**  
+> Nếu các biến dưới đây để trống, container `api`, `worker`, `beat` sẽ **crash không khởi động được**:
+> - `SECRET_KEY` — Khóa bí mật JWT (dùng `openssl rand -hex 32` để tạo)
+> - `AGENT_SECRET_KEY` — Khóa xác thực Agent
+> - `AGENT_BOOTSTRAP_TOKEN` — Token khởi tạo Agent
+
 ---
 
 ## 6. Khởi chạy hệ bằng Docker Compose
