@@ -7,7 +7,7 @@ import uuid
 # Add the project root to sys.path to allow imports from backend
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from backend.src.infrastructure.database import AsyncSessionLocal
 from backend.src.contexts.auth.models import Role, Permission, Department, User
 
@@ -41,41 +41,65 @@ DEPARTMENTS = [
 
 async def seed_data():
     print("Seeding initial data...")
-    async with AsyncSessionLocal() as db:
-        # 1. Seed Permissions
-        print("  - Seeding Permissions...")
-        for p_data in PERMISSIONS:
-            res = await db.execute(select(Permission).where(Permission.code == p_data["code"]))
-            if not res.scalar_one_or_none():
-                db.add(Permission(**p_data))
-        await db.flush()
+    max_retries = 3
+    retry_delay = 5
 
-        # 2. Seed Roles
-        print("  - Seeding Roles...")
-        all_perms_res = await db.execute(select(Permission))
-        all_perms = all_perms_res.scalars().all()
-        
-        for r_data in ROLES:
-            res = await db.execute(select(Role).where(Role.name == r_data["name"]))
-            role = res.scalar_one_or_none()
-            if not role:
-                role = Role(**r_data)
-                db.add(role)
+    for attempt in range(1, max_retries + 1):
+        try:
+            async with AsyncSessionLocal() as db:
+                # 0. Check Schema Readiness
+                table_check = await db.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'permissions');"))
+                if not table_check.scalar():
+                    raise RuntimeError("Table 'permissions' does not exist.")
+                
+                col_check = await db.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'permissions' AND column_name = 'code');"))
+                if not col_check.scalar():
+                    raise RuntimeError("Column 'code' does not exist in 'permissions' table.")
+
+                # 1. Seed Permissions
+                print("  - Seeding Permissions...")
+                for p_data in PERMISSIONS:
+                    res = await db.execute(select(Permission).where(Permission.code == p_data["code"]))
+                    if not res.scalar_one_or_none():
+                        db.add(Permission(**p_data))
                 await db.flush()
-            
-            # Auto-assign permissions to SUPER_ADMIN
-            if role.name == "SUPER_ADMIN":
-                role.permissions = all_perms
-        
-        # 3. Seed Departments
-        print("  - Seeding Departments...")
-        for d_data in DEPARTMENTS:
-            res = await db.execute(select(Department).where(Department.name == d_data["name"]))
-            if not res.scalar_one_or_none():
-                db.add(Department(**d_data))
 
-        await db.commit()
-        print("Seeding completed successfully!")
+                # 2. Seed Roles
+                print("  - Seeding Roles...")
+                all_perms_res = await db.execute(select(Permission))
+                all_perms = all_perms_res.scalars().all()
+                
+                for r_data in ROLES:
+                    res = await db.execute(select(Role).where(Role.name == r_data["name"]))
+                    role = res.scalar_one_or_none()
+                    if not role:
+                        role = Role(**r_data)
+                        db.add(role)
+                        await db.flush()
+                    
+                    # Auto-assign permissions to SUPER_ADMIN
+                    if role.name == "SUPER_ADMIN":
+                        role.permissions = all_perms
+                
+                # 3. Seed Departments
+                print("  - Seeding Departments...")
+                for d_data in DEPARTMENTS:
+                    res = await db.execute(select(Department).where(Department.name == d_data["name"]))
+                    if not res.scalar_one_or_none():
+                        db.add(Department(**d_data))
+
+                await db.commit()
+                print("Seeding completed successfully!")
+                return
+
+        except Exception as e:
+            print(f"Attempt {attempt}/{max_retries} failed: {e}")
+            if attempt < max_retries:
+                print(f"Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+            else:
+                print("Failed to seed database after multiple attempts.")
+                sys.exit(1)
 
 if __name__ == "__main__":
     asyncio.run(seed_data())
